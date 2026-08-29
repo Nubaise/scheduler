@@ -1656,6 +1656,118 @@ The remaining Phase 3 work includes:
 
 ---
 
+## Step 6: Establish OpenAPI Documentation
+
+### What we're building
+
+The FAS API needs machine-readable API documentation so that developers can understand and interact with the available HTTP endpoints.
+
+### What we implemented
+
+OpenAPI documentation was added using NestJS Swagger through `@nestjs/swagger`.
+
+The API now exposes `/docs` for the interactive Swagger UI and `/docs-json` for the generated OpenAPI document.
+
+The Swagger configuration contains:
+
+- Title: `FAS API`
+- Description: `Faculty Appointment Scheduler API`
+- Version: `1.0`
+
+### Why OpenAPI?
+
+OpenAPI provides a standard machine-readable description of an HTTP API.
+
+Swagger UI provides an interactive interface for exploring the generated API documentation.
+
+### Verification
+
+The following endpoints were manually verified:
+
+- `GET /` → HTTP 200
+- `GET /docs` → HTTP 200
+- `GET /docs-json` → HTTP 200
+
+The generated OpenAPI document uses OpenAPI `3.0.0` and contains the existing `GET /` route.
+
+### Concepts Learned
+
+**OpenAPI**
+
+A standard specification for describing HTTP APIs in a machine-readable format.
+
+**Swagger UI**
+
+An interactive interface for exploring an OpenAPI document.
+
+**API Documentation**
+
+API documentation makes the available HTTP interface easier for developers and tools to understand.
+
+---
+
+## Phase 3 Final Verification
+
+Phase 3 backend foundation work is complete.
+
+Completed:
+
+- Centralized application configuration
+- Environment validation with Joi
+- Global request validation
+- Whitelist enforcement
+- Request ID middleware
+- Request ID propagation
+- Global exception handling
+- Structured application logging
+- Structured HTTP request logging
+- Request correlation
+- OpenAPI documentation
+
+### Verification
+
+The following commands passed:
+
+`pnpm --filter api build`
+
+`pnpm --filter api test`
+
+`pnpm --filter api test:e2e`
+
+`pnpm --filter api lint`
+
+Results:
+
+- Build: passed
+- Unit tests: 1 passed
+- E2E tests: 1 passed
+- Lint: 0 warnings and 0 errors
+- `git diff --check`: clean
+
+Manual verification also confirmed:
+
+- The API starts successfully.
+- Structured startup logging is emitted.
+- HTTP request logs contain request IDs, methods, paths, status codes, and durations.
+- Request IDs are returned through the `X-Request-Id` response header.
+- Supplied request IDs are preserved.
+- Unknown routes return the standardized error response.
+- `/docs` returns HTTP 200.
+- `/docs-json` returns HTTP 200.
+- The generated OpenAPI document contains the FAS API metadata.
+
+### Result
+
+The FAS API now has its initial backend infrastructure foundation, including configuration, validation, request correlation, error handling, structured logging, and OpenAPI documentation.
+
+**Phase 3 is complete.**
+
+The next implementation phase is:
+
+- Authentication & Users
+
+---
+
 # Phase 4 — Authentication & Users
 
 _To be completed._
