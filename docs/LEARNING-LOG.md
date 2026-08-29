@@ -414,9 +414,108 @@ The PostgreSQL durable notification job processing, retries, idempotency,
 failure recovery, and transactional email integration remain to be
 implemented during the later Notifications & Worker phase.
 
-### Step 5.3: Create the Web Application
+### Step 5.3: Create the Web Application — React + TypeScript + Vite
 
-_To be completed._
+#### What we're building
+
+FAS uses a separate React frontend application for Student, Faculty, and
+Admin workflows.
+
+The application is located at:
+
+    apps/web/
+
+#### Official React/Vite setup
+
+The web application was scaffolded using the official Vite workflow with
+the React TypeScript template:
+
+    pnpm create vite apps/web --template react-ts
+
+The Vite scaffolder was configured to use:
+
+- React
+- TypeScript
+- Vite
+- ES Modules (ESM)
+- Oxlint
+
+The application dependencies were installed using pnpm.
+
+#### Why Vite?
+
+Vite provides the build and development tooling for the React frontend.
+
+The FAS architecture requires a separate React frontend communicating with
+the backend through the REST API. Vite provides the required development
+server and production build tooling without introducing an additional
+application framework.
+
+Create React App was not used.
+
+#### Generated application structure
+
+The Vite scaffold created:
+
+- `src/main.tsx` — React application entry point
+- `src/App.tsx` — initial application component
+- `src/App.css` — component styling
+- `src/index.css` — global styling
+- `src/assets/` — frontend assets
+- `public/` — static public assets
+- `index.html` — application HTML entry point
+- `vite.config.ts` — Vite configuration
+- TypeScript configuration
+- Oxlint configuration
+
+#### Concepts learned
+
+**React**
+
+React provides the component-based UI layer for the FAS frontend.
+
+**Vite**
+
+Vite provides the frontend development server and production build
+pipeline.
+
+**TypeScript**
+
+TypeScript provides static typing for the React application.
+
+**ESM**
+
+The web application uses the modern JavaScript module system supported by
+current Node.js and browser tooling.
+
+#### Verification
+
+The generated web application was verified using:
+
+    pnpm run build
+    pnpm run lint
+
+Results:
+
+- Build: passed
+- Lint: 0 warnings and 0 errors
+
+The development server was also started successfully.
+
+HTTP verification:
+
+    GET http://localhost:5173
+
+Result:
+
+    HTTP 200 OK
+
+#### Result
+
+The FAS React frontend now has a working foundation at `apps/web/`.
+
+Routing, authentication UI, API integration, Student workflows, Faculty
+workflows, and Admin workflows remain for later implementation phases.
 
 ---
 
