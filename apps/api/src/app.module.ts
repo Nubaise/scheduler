@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
 import configuration from './config/configuration.js';
 import { validationSchema } from './config/validation.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { UsersModule } from './users/users.module.js';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
   imports: [
@@ -12,6 +13,16 @@ import { UsersModule } from './users/users.module.js';
       isGlobal: true,
       load: [configuration],
       validationSchema,
+    }),
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        url: configService.getOrThrow<string>('databaseUrl'),
+        ssl: true,
+        synchronize: false,
+        autoLoadEntities: true,
+      }),
     }),
     UsersModule,
   ],
