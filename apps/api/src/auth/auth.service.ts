@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { JwtService } from '@nestjs/jwt';
 import { User, UserCredential } from '@fas/database';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -11,6 +12,7 @@ export class AuthService {
     @InjectRepository(UserCredential)
     private readonly credentialsRepository: Repository<UserCredential>,
     private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
   ) {}
 
   async setPassword(user: User, password: string): Promise<void> {
@@ -50,5 +52,22 @@ export class AuthService {
     const valid = await this.verifyPassword(user, password);
 
     return valid ? user : null;
+  }
+
+  async login(user: User) {
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    };
+
+    return {
+      accessToken: await this.jwtService.signAsync(payload),
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+    };
   }
 }

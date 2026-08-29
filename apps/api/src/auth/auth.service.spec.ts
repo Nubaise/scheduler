@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { User, UserCredential } from '@fas/database';
 import { AuthService } from './auth.service.js';
@@ -7,12 +8,18 @@ import { UsersService } from '../users/users.service.js';
 
 describe('AuthService', () => {
   let service: AuthService;
+
   let repository: {
     save: ReturnType<typeof vi.fn>;
     findOne: ReturnType<typeof vi.fn>;
   };
+
   let usersService: {
     findByEmail: ReturnType<typeof vi.fn>;
+  };
+
+  let jwtService: {
+    signAsync: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(async () => {
@@ -25,6 +32,10 @@ describe('AuthService', () => {
       findByEmail: vi.fn(),
     };
 
+    jwtService = {
+      signAsync: vi.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -35,6 +46,10 @@ describe('AuthService', () => {
         {
           provide: UsersService,
           useValue: usersService,
+        },
+        {
+          provide: JwtService,
+          useValue: jwtService,
         },
       ],
     }).compile();
@@ -110,6 +125,7 @@ describe('AuthService', () => {
       id: 'user-id',
       email: 'student@example.test',
     } as User;
+
     const password = 'StrongPassword123!';
     const passwordHash = await bcrypt.hash(password, 12);
 
@@ -138,5 +154,30 @@ describe('AuthService', () => {
     ).resolves.toBeNull();
 
     expect(repository.findOne).not.toHaveBeenCalled();
+  });
+
+  it('should create a JWT when logging in', async () => {
+    const user = {
+      id: 'user-id',
+      email: 'student@example.test',
+      role: 'student',
+    } as User;
+
+    jwtService.signAsync.mockResolvedValue('test-access-token');
+
+    await expect(service.login(user)).resolves.toEqual({
+      accessToken: 'test-access-token',
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+    });
+
+    expect(jwtService.signAsync).toHaveBeenCalledWith({
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    });
   });
 });
