@@ -1,12 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module.js';
 import { configureApp } from './../src/app.setup.js';
 
 describe('AppController (e2e)', () => {
-  let app: INestApplication<App>;
+  let app: INestApplication;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -23,6 +22,19 @@ describe('AppController (e2e)', () => {
       .get('/')
       .expect(200)
       .expect('Hello World!');
+  });
+
+  it('/auth/me should reject requests without a token', () => {
+    return request(app.getHttpServer())
+      .get('/auth/me')
+      .expect(401);
+  });
+
+  it('/auth/me should reject an invalid token', () => {
+    return request(app.getHttpServer())
+      .get('/auth/me')
+      .set('Authorization', 'Bearer invalid-token')
+      .expect(401);
   });
 
   afterEach(async () => {

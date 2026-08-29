@@ -3,6 +3,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import { User } from '@fas/database';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
+import { JwtAuthGuard } from './jwt-auth.guard.js';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -26,7 +27,12 @@ describe('AuthController', () => {
           useValue: authService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({
+        canActivate: vi.fn().mockReturnValue(true),
+      })
+      .compile();
 
     controller = module.get<AuthController>(AuthController);
   });
@@ -80,5 +86,15 @@ describe('AuthController', () => {
     ).rejects.toThrow(UnauthorizedException);
 
     expect(authService.login).not.toHaveBeenCalled();
+  });
+
+  it('should return the authenticated user', () => {
+    const user = {
+      userId: 'user-id',
+      email: 'student@example.test',
+      role: 'student',
+    };
+
+    expect(controller.getMe({ user } as never)).toEqual(user);
   });
 });
