@@ -3,12 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User, UserCredential } from '@fas/database';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { UsersService } from '../users/users.service.js';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(UserCredential)
     private readonly credentialsRepository: Repository<UserCredential>,
+    private readonly usersService: UsersService,
   ) {}
 
   async setPassword(user: User, password: string): Promise<void> {
@@ -33,5 +35,20 @@ export class AuthService {
     }
 
     return bcrypt.compare(password, credential.passwordHash);
+  }
+
+  async validateCredentials(
+    email: string,
+    password: string,
+  ): Promise<User | null> {
+    const user = await this.usersService.findByEmail(email);
+
+    if (!user) {
+      return null;
+    }
+
+    const valid = await this.verifyPassword(user, password);
+
+    return valid ? user : null;
   }
 }
