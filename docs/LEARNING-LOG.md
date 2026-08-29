@@ -1522,7 +1522,103 @@ The next implementation phase is:
 
 # Phase 4 — Authentication & Users
 
-_To be completed._
+## Step 1: Establish the Users Module
+
+### What we're building
+
+Phase 4 introduces authentication and user-management capabilities to the FAS backend.
+
+The first step establishes the `UsersModule` and `UsersService` application boundary.
+
+The Users domain will be responsible for user-related operations and will provide the user lookup capabilities that authentication will depend on.
+
+Authentication itself will be implemented separately rather than placing login, password verification, and token handling directly inside the Users service.
+
+### What we implemented
+
+Created:
+
+```
+apps/api/src/users/users.module.ts
+apps/api/src/users/users.service.ts
+apps/api/src/users/users.service.spec.ts
+```
+
+The `UsersModule` was registered in the root `AppModule`.
+
+The initial `UsersService` is intentionally minimal. User persistence operations have not yet been implemented.
+
+### Why establish the Users boundary first?
+
+Authentication needs to identify an existing FAS user before it can verify credentials or establish an authenticated session.
+
+The intended dependency is:
+
+```
+Authentication
+      ↓
+UsersService
+      ↓
+   User data
+```
+
+This keeps authentication concerns separate from general user-management concerns.
+
+The existing `User` database entity remains the source of the application's user identity model.
+
+### Concepts Learned
+
+**NestJS Module**
+
+A NestJS module groups related providers and establishes an application boundary.
+
+**Service / Provider**
+
+A service is an injectable provider managed by NestJS's dependency-injection container.
+
+**Domain Boundary**
+
+Separating Users from Authentication allows each area to have a focused responsibility.
+
+Users will manage user-related operations.
+
+Authentication will handle credential verification and authenticated identity.
+
+### Verification
+
+The new Users module was verified using:
+
+```
+pnpm --filter api build
+pnpm --filter api test
+pnpm --filter api lint
+git diff --check
+```
+
+Results:
+
+- Build: passed
+- Unit tests: 2 passed
+- Lint: 0 warnings and 0 errors
+- Diff check: clean
+
+The existing API controller test also continued to pass.
+
+### Git Milestone
+
+The Users module foundation was committed and pushed as:
+
+```
+56ef173 feat: establish users module
+```
+
+The working tree was verified clean after pushing.
+
+### Result
+
+The FAS API now has an explicit Users application boundary.
+
+The next step is to connect `UsersService` to the existing `User` database entity and establish user lookup functionality required by authentication.
 
 ---
 
