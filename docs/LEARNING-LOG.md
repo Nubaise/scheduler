@@ -1868,6 +1868,212 @@ The FAS API now has the database and service foundation required for local email
 
 The next step is to implement the authentication flow that uses the user's institute email and connects authentication to the existing Users service.
 
+## JWT Authentication
+
+### What we're building
+
+The FAS API now supports authenticated sessions using JSON Web Tokens (JWT).
+
+The authentication flow is:
+
+    Client
+       ↓
+    POST /auth/login
+       ↓
+    UsersService → find user by email
+       ↓
+    AuthService → verify password
+       ↓
+    JWT access token
+       ↓
+    Authorization: Bearer <token>
+       ↓
+    JwtAuthGuard
+       ↓
+    /auth/me
+
+### What we implemented
+
+Added JWT authentication using:
+
+- `@nestjs/jwt`
+- `@nestjs/passport`
+- `passport`
+- `passport-jwt`
+
+The `AuthService` now creates JWT access tokens after successful credential validation.
+
+The JWT payload contains:
+
+- `sub` — user ID
+- `email` — user email
+- `role` — user role
+
+The access token expires after one hour.
+
+### Login Endpoint
+
+Added:
+
+    POST /auth/login
+
+The endpoint:
+
+1. Receives an email and password.
+2. Looks up the user through `UsersService`.
+3. Verifies the password through `AuthService`.
+4. Returns `401 Unauthorized` when credentials are invalid.
+5. Returns an access token and basic user information when authentication succeeds.
+
+### JWT Strategy
+
+A Passport JWT strategy was added to validate bearer tokens.
+
+The strategy reads the JWT from:
+
+    Authorization: Bearer <token>
+
+and verifies the token using the configured JWT secret.
+
+The authenticated JWT payload is then made available to the request.
+
+### JWT Guard
+
+A `JwtAuthGuard` was added using NestJS Passport integration.
+
+The guard protects routes that require an authenticated user.
+
+### Protected `/auth/me` Endpoint
+
+Added:
+
+    GET /auth/me
+
+The endpoint is protected using:
+
+    @UseGuards(JwtAuthGuard)
+
+When authentication succeeds, the endpoint returns the authenticated JWT payload containing:
+
+- User ID
+- Email
+- Role
+
+### Configuration
+
+The JWT secret is provided through application configuration rather than being hard-coded into the authentication implementation.
+
+This keeps authentication secrets outside the source code.
+
+### Concepts Learned
+
+**JWT**
+
+JSON Web Token is a signed token that represents authenticated identity information between a client and server.
+
+**Bearer Token**
+
+A bearer token is supplied through the HTTP `Authorization` header:
+
+    Authorization: Bearer <token>
+
+**Passport Strategy**
+
+A Passport strategy defines how an authentication mechanism extracts and validates credentials.
+
+**Authentication Guard**
+
+A NestJS guard can prevent a controller route from executing unless the request satisfies the required authentication mechanism.
+
+**Access Token**
+
+An access token represents an authenticated session and is presented by the client when accessing protected routes.
+
+### Testing
+
+Unit tests cover:
+
+- Authentication service creation
+- Password hashing
+- Correct password verification
+- Incorrect password rejection
+- Missing credentials
+- Credential validation
+- Login behavior
+- Invalid login credentials
+- Authenticated `/auth/me` controller behavior
+
+The controller unit test uses a mocked JWT guard. The real guard is tested separately through HTTP end-to-end tests.
+
+### End-to-End Authentication Testing
+
+The API E2E suite verifies protected route behavior through HTTP requests.
+
+Verified:
+
+- No token → `401 Unauthorized`
+- Invalid token → `401 Unauthorized`
+
+The tests initialize the real NestJS application and exercise the actual JWT authentication infrastructure.
+
+### Verification
+
+The API was verified using:
+
+    pnpm --filter api test
+    pnpm --filter api test:e2e
+    pnpm --filter api build
+    pnpm --filter api lint
+    git diff --check
+
+Results:
+
+- Unit tests: 16 passed
+- E2E tests: 3 passed
+- Build: passed
+- Lint: 0 warnings and 0 errors
+- Diff check: clean
+
+The E2E suite confirmed:
+
+    GET / → 200
+
+    GET /auth/me without token → 401
+
+    GET /auth/me with invalid token → 401
+
+### Git Milestone
+
+The authentication implementation was completed through these commits:
+
+    bfe0a92 feat: add credential validation flow
+
+    d7fc050 feat: add JWT login authentication
+
+    1b06f6f feat: add JWT authentication guard
+
+The final authentication implementation was pushed to `origin/main`.
+
+### Result
+
+The FAS API now has a complete initial local authentication foundation:
+
+    Email/password credentials
+             ↓
+       bcrypt verification
+             ↓
+       credential validation
+             ↓
+       JWT access token
+             ↓
+       Passport JWT strategy
+             ↓
+       JWT authentication guard
+             ↓
+       Protected API routes
+
+The next authentication testing step is to verify a valid JWT against `/auth/me` through the E2E suite.
+
 ---
 
 # Phase 5 — Faculty & Availability
