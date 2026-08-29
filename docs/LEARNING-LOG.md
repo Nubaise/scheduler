@@ -14,9 +14,9 @@ while building the FAS MVP.
 
 FAS will use a monorepo containing three independently runnable applications:
 
-- pps/api — Backend REST API
-- pps/worker — Background notification worker
-- pps/web — React frontend
+- apps/api — Backend REST API
+- apps/worker — Background notification worker
+- apps/web — React frontend
 
 Additional repository areas:
 
@@ -149,6 +149,142 @@ A pnpm workspace provides the tooling needed to manage those projects together w
 ---
 
 ## Step 5: Create the Applications
+
+FAS uses three independently runnable applications:
+
+- `apps/api` — Backend REST API
+- `apps/worker` — Background notification worker
+- `apps/web` — React frontend
+
+The applications are being scaffolded incrementally while preserving the
+existing pnpm workspace structure.
+
+### Step 5.1: Create the API — NestJS
+
+#### What we're building
+
+The FAS backend API is implemented using NestJS + TypeScript + Node.js.
+
+The application is located at:
+
+    apps/api/
+
+#### Official NestJS setup
+
+The current official NestJS CLI was used to scaffold the application:
+
+    pnpm dlx @nestjs/cli@12.0.0 new api --directory apps/api --package-manager pnpm --skip-git
+
+The Nest CLI generated the standard Nest application structure.
+
+The following choices were made during scaffolding:
+
+- ES Modules (ESM)
+- Vitest
+- Oxlint
+- Express platform adapter
+- Auto-instrumented Nest observability was not enabled
+
+#### Why ESM?
+
+ESM is the native modern JavaScript module system supported by current
+Node.js versions. FAS is using Node.js 24, so there is no runtime need to
+use CommonJS for compatibility with an older Node.js release.
+
+The Nest CLI provides ESM as a first-class application option.
+
+#### Why Vitest?
+
+The current NestJS CLI provides Vitest with the ESM application template.
+Vitest provides the initial unit and integration testing foundation for
+the API.
+
+#### Node.js version adjustment
+
+The initial environment used Node.js `v24.11.0`.
+
+The current NestJS CLI requires Node.js `24.15.0+` on the Node 24 line for
+project generation, so Node.js was upgraded to `v24.20.0`.
+
+The repository's pnpm version remained unchanged at `10.28.1`.
+
+#### Generated application structure
+
+The NestJS scaffold created:
+
+- `src/main.ts` — application bootstrap
+- `src/app.module.ts` — root Nest module
+- `src/app.controller.ts` — initial HTTP controller
+- `src/app.service.ts` — initial provider
+- `test/` — end-to-end testing foundation
+- `nest-cli.json` — Nest CLI configuration
+- TypeScript configuration
+- Vitest configuration
+- Oxlint configuration
+
+#### Concepts learned
+
+**NestFactory**
+
+`NestFactory.create(AppModule)` creates the Nest application from the
+root module.
+
+**Module**
+
+A Nest module organizes related controllers and providers. `AppModule`
+is the root module of the application.
+
+**Controller**
+
+A controller defines HTTP routes and handles incoming requests.
+
+**Provider**
+
+A provider is an injectable class managed by Nest's dependency-injection
+container.
+
+**Dependency Injection**
+
+Nest can create and supply providers to other classes rather than
+requiring those classes to construct their dependencies manually.
+
+#### Verification
+
+The generated API was verified using:
+
+    pnpm run build
+    pnpm test
+    pnpm run lint
+
+Results:
+
+- Build: passed
+- Tests: 1 passed
+- Lint: 0 warnings and 0 errors
+
+The application was also started and tested over HTTP.
+
+Request:
+
+    GET http://localhost:3000
+
+Result:
+
+    HTTP 200 OK
+    Hello World!
+
+#### Result
+
+The FAS API application now has a working NestJS foundation at
+`apps/api/`.
+
+The worker and web applications remain to be scaffolded.
+
+### Step 5.2: Create the Worker
+
+_To be completed._
+
+### Step 5.3: Create the Web Application
 
 _To be completed._
 
