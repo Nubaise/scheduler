@@ -4,6 +4,7 @@ import configuration from './config/configuration.js';
 import { validationSchema } from './config/validation.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
+import { UsersModule } from './users/users.module.js';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { AppService } from './app.service.js';
       load: [configuration],
       validationSchema,
     }),
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
