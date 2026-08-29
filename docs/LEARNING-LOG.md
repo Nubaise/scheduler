@@ -1622,6 +1622,150 @@ The next step is to connect `UsersService` to the existing `User` database entit
 
 ---
 
+## Step 2: Connect UsersService to the User Repository
+
+### What we're building
+
+The Users service now needs access to the existing `User` database entity so that future user-management and authentication operations can query persisted users.
+
+The service uses NestJS's TypeORM integration rather than creating a separate database access layer.
+
+### What we implemented
+
+The API now depends on the shared `@fas/database` package.
+
+The existing `User` entity is exported from:
+
+    packages/database/src/index.ts
+
+The API imports that same entity:
+
+    import { User } from '@fas/database';
+
+The Users module registers the entity repository using:
+
+    TypeOrmModule.forFeature([User])
+
+The Users service receives the repository through NestJS dependency injection:
+
+    @InjectRepository(User)
+    private readonly usersRepository: Repository<User>
+
+### Database Integration
+
+The API's root `AppModule` now initializes TypeORM using `TypeOrmModule.forRootAsync()`.
+
+The database connection uses the existing application configuration:
+
+    DATABASE_URL
+
+The configuration layer was extended so that:
+
+    DATABASE_URL
+
+is validated as a required URI during application startup.
+
+The API uses:
+
+    synchronize: false
+
+so the application does not modify the database schema automatically.
+
+Entities registered through the feature modules are discovered using:
+
+    autoLoadEntities: true
+
+### Why use the repository pattern?
+
+TypeORM provides a repository abstraction for working with a specific entity.
+
+For the FAS Users service:
+
+    UsersService
+          ↓
+    User Repository
+          ↓
+    PostgreSQL
+
+This keeps database operations inside the service instead of placing database queries directly inside controllers.
+
+### Why reuse the shared User entity?
+
+The `User` entity already represents the FAS user table in the database package.
+
+Exporting and reusing that entity prevents the API from defining a second copy of the same database model.
+
+The database package therefore remains the source of truth for the persistence model.
+
+### Concepts Learned
+
+**Repository**
+
+A TypeORM repository provides methods for querying and modifying records belonging to an entity.
+
+**Dependency Injection**
+
+NestJS can inject the appropriate TypeORM repository into a service using `@InjectRepository()`.
+
+**TypeOrmModule.forFeature()**
+
+This registers repositories for selected entities within a NestJS module.
+
+**TypeOrmModule.forRootAsync()**
+
+This allows the application's database connection configuration to be created through NestJS dependency injection.
+
+**Shared Entity**
+
+A workspace package can expose database entities so multiple applications use the same persistence model.
+
+### Verification
+
+The database and API were verified using:
+
+    pnpm --filter @fas/database build
+
+    pnpm --filter api test
+
+    pnpm --filter api test:e2e
+
+    pnpm --filter api build
+
+    pnpm --filter api lint
+
+    git diff --check
+
+Results:
+
+- Database build: passed
+- Unit tests: 2 passed
+- E2E tests: 1 passed
+- API build: passed
+- Lint: 0 warnings and 0 errors
+- Diff check: clean
+
+The E2E test also successfully initialized the API against the Neon PostgreSQL database.
+
+### Testing Dependency Injection
+
+The Users service unit test provides a mock repository using:
+
+    getRepositoryToken(User)
+
+This allows the service to be instantiated without connecting to PostgreSQL during the unit test.
+
+The test therefore verifies the NestJS dependency-injection configuration independently from the real database connection.
+
+### Result
+
+The Users service is now connected to the existing FAS `User` entity through TypeORM.
+
+The API has the database infrastructure required for implementing actual user lookup operations.
+
+The next step is to implement the first Users service query needed by authentication.
+
+---
+
 # Phase 5 — Faculty & Availability
 
 _To be completed._
