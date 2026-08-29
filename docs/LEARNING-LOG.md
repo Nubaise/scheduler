@@ -697,6 +697,225 @@ Completed:
 
 ---
 
+## Step 5: Implement the Initial FAS Relational Schema
+
+### What we're building
+
+The initial FAS relational database schema was implemented using TypeORM
+entities and a version-controlled PostgreSQL migration.
+
+The initial schema contains:
+
+- `users`
+- `departments`
+- `faculty`
+- `availability`
+- `appointment_requests`
+- `alternative_proposals`
+- `appointments`
+
+### Relational Model
+
+The main relationships are:
+
+    departments
+         │
+         │ 1:N
+         ▼
+      faculty
+         │
+         │ 1:N
+         ▼
+    availability
+
+    users
+       │
+       ├── faculty
+       │
+       └── appointment_requests
+                    │
+                    ├── alternative_proposals
+                    │
+                    └── appointments
+
+### Why separate these entities?
+
+The schema separates different business concepts instead of placing all
+scheduling information into a single table.
+
+`users` represents the FAS application identity.
+
+`faculty` represents faculty-specific information.
+
+`departments` provides a normalized institutional reference instead of
+storing department names repeatedly in faculty records.
+
+`availability` represents periods during which faculty may be available.
+
+`appointment_requests` represents a request before it becomes a confirmed
+appointment.
+
+`alternative_proposals` represents alternative times proposed for a
+request.
+
+`appointments` represents confirmed scheduling state.
+
+### Concepts Learned
+
+**Primary Key**
+
+A primary key uniquely identifies a row in a database table.
+
+FAS uses UUID primary keys for the initial schema.
+
+**Foreign Key**
+
+A foreign key connects records between related tables and allows the
+database to enforce referential integrity.
+
+Examples include:
+
+    faculty.user_id → users.id
+
+    faculty.department_id → departments.id
+
+    availability.faculty_id → faculty.id
+
+    appointment_requests.faculty_id → faculty.id
+
+### One-to-One Relationship
+
+A FAS user can have at most one faculty profile.
+
+The `faculty.user_id` relationship is therefore unique.
+
+### One-to-Many Relationship
+
+A department can contain multiple faculty members.
+
+A faculty member can have multiple availability periods.
+
+An appointment request can have multiple alternative proposals.
+
+### Appointment Request vs Appointment
+
+A request and a confirmed appointment are separate concepts.
+
+A student can submit an appointment request without immediately creating a
+confirmed appointment.
+
+A successful approval produces authoritative appointment state.
+
+The database therefore models:
+
+    appointment_request
+            │
+            │ 0..1
+            ▼
+        appointment
+
+The appointment's `appointment_request_id` is unique so one request cannot
+produce multiple confirmed appointments.
+
+### Temporal Data
+
+Scheduling timestamps use PostgreSQL `timestamptz`.
+
+Time intervals are represented using:
+
+    starts_at
+    ends_at
+
+rather than storing only a duration.
+
+The initial schema enforces:
+
+    start < end
+
+using database-level `CHECK` constraints for availability,
+appointment requests, alternative proposals, and appointments.
+
+This prevents invalid intervals from entering the database.
+
+### Migration-First Schema Management
+
+The schema is managed through a TypeORM migration rather than automatic
+schema synchronization.
+
+The initial migration was generated as:
+
+    1788000378254-InitialSchema.ts
+
+The migration was reviewed before execution.
+
+### Verification
+
+The database package was successfully built using:
+
+    pnpm --filter @fas/database build
+
+Migration discovery was verified using:
+
+    pnpm --filter @fas/database migration:show
+
+The initial migration was then applied successfully to Neon PostgreSQL
+using:
+
+    pnpm --filter @fas/database migration:run
+
+TypeORM reported:
+
+    Migration InitialSchema1788000378254 has been executed successfully.
+
+Migration status was subsequently verified:
+
+    [X] 1 InitialSchema1788000378254
+
+### Concepts Learned
+
+**Migration Generation**
+
+TypeORM can compare the entity definitions with the current database
+schema and generate a migration representing the required database
+changes.
+
+**Migration Execution**
+
+A migration applies a version-controlled schema change to the database.
+
+**Migration Tracking**
+
+TypeORM records executed migrations in its migration tracking table,
+allowing the application to determine which migrations have already been
+applied.
+
+**Database Constraints**
+
+Important business invariants should be protected by the database where
+possible rather than relying only on application code.
+
+### Git Milestone
+
+The initial relational schema was committed and pushed as:
+
+    d694010 feat: implement initial relational schema
+
+The working tree was verified clean after pushing.
+
+### Result
+
+The initial FAS relational schema is now implemented in TypeORM and
+deployed to the Neon PostgreSQL development database.
+
+The remaining Phase 2 work includes:
+
+- Review and add required database indexes
+- Development/seed data
+- Final database verification
+- Database integration testing
+
+---
+
 # Phase 3 — Backend
 
 _To be completed._
