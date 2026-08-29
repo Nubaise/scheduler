@@ -1764,6 +1764,50 @@ The API has the database infrastructure required for implementing actual user lo
 
 The next step is to implement the first Users service query needed by authentication.
 
+## Step 3: Add User Lookup by Email
+
+### What we're building
+
+The Users service needs a way to retrieve a user by email for future authentication.
+
+### What we implemented
+
+Added:
+
+    UsersService.findByEmail(email)
+
+The method uses the TypeORM `User` repository:
+
+    repository.findOne({
+      where: { email },
+    })
+
+It returns:
+
+    User | null
+
+### Testing
+
+Added unit tests covering:
+
+- User found by email
+- User not found
+
+The tests also verify the repository query.
+
+### Verification
+
+- Unit tests: 4 passed
+- Build: passed
+- Lint: 0 warnings and 0 errors
+- Diff check: clean
+
+### Result
+
+The Users service can now look up persisted users by email.
+
+Authentication can use this operation when implementing credential verification.
+
 ---
 
 # Phase 5 — Faculty & Availability
