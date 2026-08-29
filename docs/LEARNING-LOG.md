@@ -1030,6 +1030,99 @@ lookup patterns.
 
 The next Phase 2 task is development/seed data.
 
+## Step 7: Development Seed Data
+
+### What we're building
+
+A deterministic development seed for the FAS database.
+
+The seed provides a small but realistic dataset that can be used while
+developing and testing the application without relying on production
+data.
+
+### Development Data
+
+The seed creates or reuses:
+
+- One Computer Science and Engineering department
+- One development admin user
+- One development faculty user
+- One development student user
+- One faculty profile
+- Two faculty availability periods
+- One pending appointment request
+- One pending appointment request with an alternative proposal
+- One approved appointment request with a confirmed appointment
+
+Development users use `.test` email addresses:
+
+    admin@example.test
+    faculty@example.test
+    student@example.test
+
+These are development identities only. Authentication and institutional
+email registration rules remain part of the later authentication and
+user-management work.
+
+### Idempotency
+
+The seed is designed to be safely repeatable.
+
+Existing records are looked up using stable development identifiers
+before new records are created.
+
+The seed was executed twice against the development Neon database.
+
+Both executions completed successfully and returned the same record IDs,
+confirming that the second execution reused the existing development
+records instead of creating duplicates.
+
+### Seed Command
+
+A package script was added:
+
+    pnpm --filter @fas/database seed
+
+The seed is executed directly through the TypeScript ESM loader.
+
+### Concepts Learned
+
+**Seed Data**
+
+Development data inserted into a database to provide a known state for
+local development and testing.
+
+**Deterministic Seed**
+
+A seed whose records can be reliably identified and reused, producing a
+predictable development database state.
+
+**Idempotent Operation**
+
+An operation that can be executed multiple times without producing an
+incorrect additional effect.
+
+For the FAS seed, running the command repeatedly does not create
+duplicate development users, faculty profiles, availability periods,
+requests, proposals, or appointments.
+
+### Important Boundary
+
+The seed does not implement authentication, password handling,
+institutional email validation, or authorization.
+
+Those concerns belong to the appropriate later implementation phases.
+
+### Result
+
+The FAS database now has reproducible development data that can be used
+by subsequent backend and integration work.
+
+The next Phase 2 task is final database verification before moving to
+backend implementation.
+
+---
+
 # Phase 3 — Backend
 
 _To be completed._
