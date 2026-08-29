@@ -1472,6 +1472,190 @@ The remaining Phase 3 work includes:
 
 ---
 
+## Step 5: Establish Structured Logging
+
+### What we're building
+
+The API needs structured application logs that provide useful information
+for startup and HTTP request processing.
+
+Because request IDs were already established, HTTP logs can correlate an
+incoming request with the corresponding application event.
+
+### What we implemented
+
+The API now uses NestJS's built-in `Logger` rather than introducing an
+additional logging dependency.
+
+The bootstrap process emits a structured startup event containing:
+
+- event name
+- configured port
+
+HTTP request logging was added through:
+
+```
+apps/api/src/common/middleware/request-logging.middleware.ts
+```
+
+The middleware records a structured event after the HTTP response finishes.
+
+Each HTTP request log contains:
+
+- `event`
+- `requestId`
+- `method`
+- `path`
+- `statusCode`
+- `durationMs`
+
+### Why log after the response finishes?
+
+The response `finish` event allows the logger to record the final HTTP
+status code and the total request duration.
+
+This makes the log useful for both request tracing and basic performance
+diagnostics.
+
+### Request Correlation
+
+The request logging middleware runs after the request ID middleware.
+
+The resulting flow is:
+
+```
+Request
+    ↓
+Request ID middleware
+    ↓
+HTTP logging middleware
+    ↓
+Validation
+    ↓
+Controller
+    ↓
+Response finishes
+    ↓
+Structured HTTP log
+```
+
+A request using:
+
+```
+X-Request-Id: fas-log-test-123
+```
+
+produced a log event containing:
+
+```
+{
+  "event": "http_request",
+  "requestId": "fas-log-test-123",
+  "method": "GET",
+  "path": "/",
+  "statusCode": 200,
+  "durationMs": 6.45
+}
+```
+
+### Bootstrap Logging
+
+Application startup also produces a structured event:
+
+```
+{
+  "event": "api_started",
+  "port": 3000
+}
+```
+
+### Why use the built-in logger?
+
+The current Phase 3 requirement is to establish structured application
+logging without introducing unnecessary infrastructure.
+
+NestJS's built-in `Logger` is sufficient for this foundation. A dedicated
+logging platform or external logging dependency is not required at this
+stage.
+
+More advanced monitoring, alerting, and production observability belong to
+the later deployment and observability work defined by the implementation
+plan.
+
+### Concepts Learned
+
+**Structured Logging**
+
+Logs can be emitted as structured data so that important fields such as
+event type, request ID, status, and duration can be processed consistently.
+
+**Request Correlation**
+
+A request ID connects an HTTP request with its corresponding log events.
+
+**Response Lifecycle**
+
+Listening for the response `finish` event allows request logging to capture
+the final response status and elapsed processing time.
+
+---
+
+## Structured Logging Checkpoint
+
+Completed:
+
+- Structured application startup logging
+- Structured HTTP request logging
+- Request ID correlation in HTTP logs
+- HTTP method logging
+- Request path logging
+- HTTP status logging
+- Request duration logging
+
+### Verification
+
+The logging implementation was verified using:
+
+```
+pnpm --filter api build
+pnpm --filter api test
+pnpm --filter api test:e2e
+pnpm --filter api lint
+```
+
+Results:
+
+- Build: passed
+- Unit tests: 1 passed
+- E2E tests: 1 passed
+- Lint: 0 warnings and 0 errors
+
+Manual verification confirmed that an HTTP request using
+`fas-log-test-123` produced a corresponding structured `http_request`
+log containing the same request ID and a successful HTTP status.
+
+### Git Milestone
+
+The structured logging checkpoint was committed and pushed as:
+
+```
+1f5c429 feat: add structured HTTP request logging
+```
+
+The working tree was verified clean after pushing.
+
+### Result
+
+The FAS API now has a structured logging foundation that can correlate HTTP
+requests with request IDs and record basic request execution information.
+
+The remaining Phase 3 work includes:
+
+- OpenAPI API documentation
+- Final Phase 3 verification
+
+---
+
 # Phase 4 — Authentication & Users
 
 _To be completed._
