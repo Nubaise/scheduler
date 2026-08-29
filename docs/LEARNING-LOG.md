@@ -521,7 +521,179 @@ workflows, and Admin workflows remain for later implementation phases.
 
 # Phase 2 — Database
 
-_To be completed._
+## Step 1: Establish the Database Package
+
+### What we're building
+
+FAS uses PostgreSQL hosted by Neon, with TypeORM as the ORM.
+
+The database implementation is isolated in a shared workspace package:
+
+    packages/database/
+
+This package will provide the shared database infrastructure used by the
+API and worker.
+
+### Technology
+
+- PostgreSQL
+- Neon PostgreSQL
+- TypeORM
+- PostgreSQL `pg` driver
+- NestJS TypeORM integration
+- TypeScript
+
+### Why a shared database package?
+
+The API and worker both need access to the same PostgreSQL database.
+
+Keeping the database infrastructure in `packages/database/` avoids
+duplicating connection and migration configuration across applications.
+
+### Concepts Learned
+
+**Workspace Package**
+
+A shared package inside the pnpm monorepo that can be consumed by multiple
+applications.
+
+**TypeORM DataSource**
+
+The TypeORM `DataSource` represents the application's database connection
+configuration and is also used by the TypeORM migration tooling.
+
+---
+
+## Step 2: Configure TypeORM
+
+### What we implemented
+
+Created:
+
+    packages/database/src/data-source.ts
+
+The DataSource uses:
+
+- PostgreSQL
+- `DATABASE_URL`
+- SSL
+- `synchronize: false`
+- TypeORM migrations
+- TypeORM entities
+
+### Why `synchronize: false`?
+
+FAS will use version-controlled database migrations rather than allowing
+the application to automatically modify the database schema.
+
+This makes database schema changes explicit, reviewable, and reproducible.
+
+### Concepts Learned
+
+**Migration**
+
+A version-controlled database change that can be applied and reverted in
+a controlled sequence.
+
+**Entity**
+
+A TypeORM representation of a database table/domain object. The FAS domain
+entities will be implemented in a later database-schema step.
+
+---
+
+## Step 3: Establish Migration Tooling
+
+### What we implemented
+
+The database package uses TypeORM's ESM CLI through `ts-node`.
+
+Migration commands were established for:
+
+- Creating migrations
+- Generating migrations
+- Running migrations
+- Reverting migrations
+- Showing migration status
+
+### Verification
+
+The TypeORM CLI was successfully executed from the database package.
+
+The database package also builds successfully using TypeScript.
+
+### Result
+
+The migration tooling is ready for the initial FAS database schema.
+
+---
+
+## Step 4: Connect to Neon PostgreSQL
+
+### Environment
+
+The repository uses a root-level local environment file:
+
+    .env
+
+The environment contract is documented through:
+
+    .env.example
+
+The actual `.env` file is excluded from Git.
+
+### Database Configuration
+
+The application reads:
+
+    DATABASE_URL
+
+The connection string is provided by the Neon PostgreSQL project.
+
+### Verification
+
+The TypeORM migration status command was executed successfully against
+Neon PostgreSQL.
+
+No migrations currently exist, so there are no migration records to
+display yet.
+
+### Result
+
+The FAS application can successfully connect to the Neon PostgreSQL
+database through TypeORM.
+
+### Security Lesson
+
+Database credentials must remain in local/deployment environment
+configuration and must never be committed to Git.
+
+---
+
+## Database Foundation Checkpoint
+
+Completed:
+
+- Neon PostgreSQL project established
+- Shared `@fas/database` workspace package established
+- TypeORM installed
+- PostgreSQL `pg` driver installed
+- NestJS TypeORM integration installed
+- TypeORM DataSource established
+- Migration tooling established
+- Environment contract established
+- `.env` protected by `.gitignore`
+- Neon PostgreSQL connectivity verified
+- `synchronize` disabled
+
+### Next
+
+- Define the initial FAS relational schema
+- Create the initial migration
+- Apply the migration to Neon
+- Integrate database access with the API
+- Integrate database access with the worker
+- Add database integration tests
 
 ---
 
