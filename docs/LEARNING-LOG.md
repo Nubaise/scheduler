@@ -2074,6 +2074,49 @@ The FAS API now has a complete initial local authentication foundation:
 
 The next authentication testing step is to verify a valid JWT against `/auth/me` through the E2E suite.
 
+### End-to-End Authentication Testing
+
+The API E2E suite verifies protected route behavior through HTTP requests using the real NestJS application and JWT authentication infrastructure.
+
+Verified:
+
+- No token → `401 Unauthorized`
+- Invalid token → `401 Unauthorized`
+- Valid JWT → `200 OK`
+- Valid JWT → authenticated user payload is returned
+
+The valid JWT is generated using the application's configured `JwtService`, then sent through the HTTP `Authorization: Bearer <token>` header.
+
+The JWT strategy validates the token and transforms the payload into the authenticated request user.
+
+### Verification
+
+The API was verified using:
+
+    pnpm --filter api test
+    pnpm --filter api test:e2e
+    pnpm --filter api build
+    pnpm --filter api lint
+    git diff --check
+
+Results:
+
+- Unit tests: 16 passed
+- E2E tests: 4 passed
+- Build: passed
+- Lint: 0 warnings and 0 errors
+- Diff check: clean
+
+The E2E suite confirmed:
+
+    GET / → 200
+
+    GET /auth/me without token → 401
+
+    GET /auth/me with invalid token → 401
+
+    GET /auth/me with valid JWT → 200
+
 ---
 
 # Phase 5 — Faculty & Availability
