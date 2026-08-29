@@ -1125,7 +1125,350 @@ backend implementation.
 
 # Phase 3 — Backend
 
-_To be completed._
+## Step 1: Establish Backend Configuration
+
+### What we're building
+
+The FAS backend needs centralized configuration and environment validation so
+that required configuration is checked when the application starts.
+
+### What we implemented
+
+The API now uses NestJS `ConfigModule` with:
+
+- A configuration factory
+- Joi environment validation
+- Global configuration availability
+
+The configuration is loaded during application startup.
+
+### Environment Validation
+
+The API validates the `PORT` environment variable.
+
+An invalid value such as:
+
+```
+PORT=invalid
+```
+
+causes application startup to fail with a configuration validation error:
+
+```
+Config validation error: PORT: "PORT" must be a number
+```
+
+When `PORT` is not provided, the application continues using the default
+port configured by the bootstrap code.
+
+### Why validate configuration at startup?
+
+Invalid configuration should be detected when the application starts rather
+than causing unexpected failures later during request processing.
+
+Failing early makes configuration problems easier to identify and prevents
+the application from starting with an invalid runtime configuration.
+
+### Concepts Learned
+
+**Configuration Module**
+
+NestJS `ConfigModule` provides application configuration through the NestJS
+dependency-injection system.
+
+**Environment Validation**
+
+Environment variables can be validated against a defined schema before the
+application starts.
+
+**Fail Fast**
+
+Configuration errors are detected during startup instead of being allowed
+to propagate into runtime behavior.
+
+---
+
+## Step 2: Establish Request Validation
+
+### What we're building
+
+The API must validate incoming request data before it reaches application
+logic.
+
+### What we implemented
+
+A shared application setup function was created:
+
+```
+apps/api/src/app.setup.ts
+```
+
+The function configures a global NestJS `ValidationPipe` with:
+
+- `whitelist: true`
+- `forbidNonWhitelisted: true`
+- `transform: true`
+
+### Why global validation?
+
+Request validation should be applied consistently across the API rather
+than requiring every controller to configure validation independently.
+
+### Validation Behavior
+
+The API rejects invalid request bodies.
+
+For example, a DTO containing an invalid email address or a name shorter
+than the required minimum length produces:
+
+```
+HTTP 400 Bad Request
+```
+
+The API also rejects unexpected properties that are not defined by the DTO.
+
+### Concepts Learned
+
+**DTO**
+
+A Data Transfer Object defines the expected structure of data entering or
+leaving an application boundary.
+
+**ValidationPipe**
+
+NestJS provides `ValidationPipe` to validate and transform incoming
+request data.
+
+**Whitelist**
+
+The whitelist option allows only properties defined by validation metadata.
+
+**Forbid Non-Whitelisted**
+
+This option rejects requests containing properties that are not allowed
+instead of silently removing them.
+
+---
+
+## Step 3: Establish Request IDs
+
+### What we're building
+
+Each API request needs a stable identifier that can later be used to
+correlate requests, logs, and errors.
+
+### What we implemented
+
+Created:
+
+```
+apps/api/src/common/middleware/request-id.middleware.ts
+```
+
+The middleware:
+
+1. Checks for an incoming `X-Request-Id` header.
+2. Preserves the supplied value when present.
+3. Generates a UUID when no request ID is supplied.
+4. Stores the ID on the request.
+5. Returns the ID through the `X-Request-Id` response header.
+
+### Verification
+
+A request without a request ID produced a generated UUID:
+
+```
+30ba4760-cba3-409e-a811-41225e084018
+```
+
+A request with:
+
+```
+X-Request-Id: fas-test-request-123
+```
+
+returned:
+
+```
+X-Request-Id: fas-test-request-123
+```
+
+### Why request IDs?
+
+A request ID provides a common identifier that can connect an HTTP request
+with application logs and error responses.
+
+This becomes particularly useful when diagnosing failures in a distributed
+system containing the API, worker, database, and external services.
+
+### Concepts Learned
+
+**Request Correlation**
+
+A request identifier allows events belonging to the same request to be
+connected during troubleshooting.
+
+**Middleware**
+
+Middleware executes during the HTTP request/response lifecycle and can
+perform cross-cutting operations before the request reaches a controller.
+
+---
+
+## Step 4: Establish Global Error Handling
+
+### What we're building
+
+The API needs a consistent error response format and should avoid exposing
+unnecessary internal implementation details.
+
+### What we implemented
+
+Created:
+
+```
+apps/api/src/common/filters/all-exceptions.filter.ts
+```
+
+The global exception filter handles both NestJS HTTP exceptions and
+unexpected exceptions.
+
+HTTP exceptions return a structured response containing:
+
+- `statusCode`
+- `message`
+- `error` when available
+- `requestId`
+
+Unexpected exceptions return:
+
+```
+statusCode: 500
+message: "Internal server error"
+```
+
+The request ID is included in both cases.
+
+### Error Response
+
+An unknown route was tested using:
+
+```
+GET /does-not-exist
+```
+
+The API returned:
+
+```
+{
+  "statusCode": 404,
+  "message": "Cannot GET /does-not-exist",
+  "error": "Not Found",
+  "requestId": "e5e6d828-51ae-49c6-ae73-b56a120d18eb"
+}
+```
+
+The response header was also verified using a known request ID:
+
+```
+X-Request-Id: fas-error-test-123
+```
+
+The returned response header contained:
+
+```
+X-Request-Id: fas-error-test-123
+```
+
+### Why a global exception filter?
+
+Centralizing exception handling provides a consistent API error contract and
+prevents individual controllers from having to implement the same error
+formatting behavior.
+
+The filter also prevents unexpected server exceptions from being returned
+with potentially sensitive implementation details.
+
+### Concepts Learned
+
+**Exception Filter**
+
+A NestJS exception filter intercepts exceptions and controls how they are
+converted into HTTP responses.
+
+**Error Contract**
+
+An API error contract defines the structure clients can consistently expect
+when requests fail.
+
+**Internal Error Isolation**
+
+Unexpected server errors should expose a generic message to clients while
+allowing detailed diagnostic information to be handled by server-side
+logging.
+
+---
+
+## Backend Foundation Checkpoint
+
+Completed:
+
+- Centralized application configuration
+- Environment validation with Joi
+- Global request validation
+- Whitelist enforcement
+- Request ID middleware
+- Request ID propagation through responses
+- Global exception handling
+- Consistent HTTP error responses
+- Generic handling for unexpected server errors
+
+### Verification
+
+The API backend foundation was verified using:
+
+```
+pnpm --filter api build
+pnpm --filter api test
+pnpm --filter api test:e2e
+pnpm --filter api lint
+```
+
+Results:
+
+- Build: passed
+- Unit tests: 1 passed
+- E2E tests: 1 passed
+- Lint: 0 warnings and 0 errors
+
+Additional manual verification confirmed:
+
+- Invalid `PORT` configuration prevents application startup.
+- Generated request IDs are returned through `X-Request-Id`.
+- Supplied request IDs are preserved.
+- Unknown routes return the standardized error response.
+- Error response request IDs are preserved.
+
+### Git Milestone
+
+The backend foundation checkpoint was committed and pushed as:
+
+```
+2b07f45 feat: establish backend validation and error handling
+```
+
+The working tree was verified clean after pushing.
+
+### Result
+
+The FAS API now has a validated configuration foundation, global request
+validation, request correlation, and centralized error handling.
+
+The remaining Phase 3 work includes:
+
+- Structured logging
+- OpenAPI API documentation
+- Final Phase 3 verification
 
 ---
 
