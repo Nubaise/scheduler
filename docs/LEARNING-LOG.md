@@ -1808,6 +1808,66 @@ The Users service can now look up persisted users by email.
 
 Authentication can use this operation when implementing credential verification.
 
+## Local Authentication Credentials
+
+The API authentication foundation was implemented using local email/password credentials.
+
+### Database
+
+A separate `user_credentials` table was added rather than storing passwords directly on the `users` table.
+
+The credential entity stores:
+
+- User ID
+- Password hash
+- Created timestamp
+- Updated timestamp
+
+The `user_id` column is unique and references the existing `users` table, creating a one-to-one relationship between a user and their local credential.
+
+### Migration
+
+A TypeORM migration was generated and applied to the Neon PostgreSQL database.
+
+Verification confirmed:
+
+- Initial schema: executed
+- Scheduling indexes: executed
+- User credentials migration: executed
+
+### Authentication Service
+
+The `AuthService` was connected to the `UserCredential` repository through NestJS dependency injection.
+
+Two operations were implemented:
+
+- `setPassword()` — hashes a password with bcrypt and stores the password hash.
+- `verifyPassword()` — retrieves the user's credential and verifies the supplied password against the stored bcrypt hash.
+
+Passwords are never stored in plaintext.
+
+### Testing
+
+Unit tests cover:
+
+- Auth service creation
+- Password hashing and persistence
+- Correct password verification
+- Incorrect password rejection
+- Missing credential handling
+
+### Verification
+
+- Unit tests: 9 passed
+- Build: passed
+- Lint: 0 warnings and 0 errors
+
+### Result
+
+The FAS API now has the database and service foundation required for local email/password authentication.
+
+The next step is to implement the authentication flow that uses the user's institute email and connects authentication to the existing Users service.
+
 ---
 
 # Phase 5 — Faculty & Availability
