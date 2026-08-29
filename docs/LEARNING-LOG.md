@@ -916,6 +916,120 @@ The remaining Phase 2 work includes:
 
 ---
 
+## Step 6: Add Scheduling Indexes
+
+### What we're building
+
+Database indexes were added for the main FAS scheduling and lookup
+patterns.
+
+The indexes cover:
+
+- Faculty appointments by start time
+- Student appointments by start time
+- Faculty availability by start time
+- Faculty appointment requests by status
+- Student appointment requests by status
+- Alternative proposals by appointment request
+
+### Indexes Added
+
+    appointments(faculty_id, starts_at)
+
+    appointments(student_id, starts_at)
+
+    availability(faculty_id, starts_at)
+
+    appointment_requests(faculty_id, status)
+
+    appointment_requests(student_id, status)
+
+    alternative_proposals(appointment_request_id)
+
+### Why indexes?
+
+An index allows PostgreSQL to locate relevant rows more efficiently
+without scanning the entire table.
+
+For example, the index:
+
+    appointments(faculty_id, starts_at)
+
+supports queries that retrieve a faculty member's appointments in
+chronological order.
+
+The index:
+
+    availability(faculty_id, starts_at)
+
+supports retrieving a faculty member's availability periods by time.
+
+### Important Distinction
+
+An index improves data access performance but does not enforce the
+appointment overlap invariant.
+
+Preventing two concurrent confirmed appointments from occupying
+overlapping time for the same faculty member is a separate database
+concurrency problem.
+
+That invariant will be implemented as part of the transactional
+appointment scheduling work in Phase 6.
+
+### Migration
+
+A separate migration was generated:
+
+    1788011061452-AddSchedulingIndexes.ts
+
+The migration was reviewed before execution and contained only the six
+intended indexes.
+
+It was then applied successfully to Neon PostgreSQL.
+
+Migration status was verified using:
+
+    pnpm --filter @fas/database migration:show
+
+Result:
+
+    [X] 1 InitialSchema1788000378254
+    [X] 2 AddSchedulingIndexes1788011061452
+
+### Concepts Learned
+
+**Index**
+
+A database structure that helps PostgreSQL find rows efficiently based
+on indexed columns.
+
+**Composite Index**
+
+An index containing multiple columns.
+
+For example:
+
+    (faculty_id, starts_at)
+
+The column order matters because PostgreSQL can use the index most
+effectively for queries matching the leading columns.
+
+**Index vs Constraint**
+
+An index primarily supports efficient data access.
+
+A constraint protects data integrity.
+
+They serve different purposes even though some constraints, such as
+unique constraints, are implemented using indexes internally.
+
+### Result
+
+The initial FAS schema now has indexes supporting the main scheduling
+lookup patterns.
+
+The next Phase 2 task is development/seed data.
+
 # Phase 3 — Backend
 
 _To be completed._
