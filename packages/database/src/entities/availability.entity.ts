@@ -3,6 +3,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -10,6 +11,8 @@ import {
 } from 'typeorm';
 import { Faculty } from './faculty.entity.js';
 
+@Index(['facultyId', 'startsAt'])
+@Check('"starts_at" < "ends_at"')
 @Entity({ name: 'availability' })
 @Check('"starts_at" < "ends_at"')
 export class Availability {

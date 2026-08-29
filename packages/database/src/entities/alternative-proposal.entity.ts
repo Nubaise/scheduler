@@ -3,6 +3,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -11,6 +12,7 @@ import {
 import { AppointmentRequest } from './appointment-request.entity.js';
 import { User } from './user.entity.js';
 
+@Index(['appointmentRequestId'])
 @Check('"proposed_start" < "proposed_end"')
 @Entity({ name: 'alternative_proposals' })
 export class AlternativeProposal {

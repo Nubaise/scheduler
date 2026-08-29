@@ -3,6 +3,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToOne,
@@ -13,6 +14,8 @@ import { AppointmentRequest } from './appointment-request.entity.js';
 import { Faculty } from './faculty.entity.js';
 import { User } from './user.entity.js';
 
+@Index(['facultyId', 'startsAt'])
+@Index(['studentId', 'startsAt'])
 @Check('"starts_at" < "ends_at"')
 @Entity({ name: 'appointments' })
 export class Appointment {
@@ -23,7 +26,7 @@ export class Appointment {
   @JoinColumn({ name: 'appointment_request_id' })
   appointmentRequest!: AppointmentRequest;
 
-  @Column({ name: 'appointment_request_id', type: 'uuid'})
+  @Column({ name: 'appointment_request_id', type: 'uuid' })
   appointmentRequestId!: string;
 
   @ManyToOne(() => User)
