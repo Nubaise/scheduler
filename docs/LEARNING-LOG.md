@@ -1129,8 +1129,7 @@ backend implementation.
 
 ### What we're building
 
-The FAS backend needs centralized configuration and environment validation so
-that required configuration is checked when the application starts.
+The FAS backend needs centralized configuration and environment validation so that required configuration is checked when the application starts.
 
 ### What we implemented
 
@@ -1148,43 +1147,31 @@ The API validates the `PORT` environment variable.
 
 An invalid value such as:
 
-```
-PORT=invalid
-```
+`PORT=invalid`
 
-causes application startup to fail with a configuration validation error:
+causes application startup to fail with a configuration validation error.
 
-```
-Config validation error: PORT: "PORT" must be a number
-```
-
-When `PORT` is not provided, the application continues using the default
-port configured by the bootstrap code.
+When `PORT` is not provided, the application continues using the default port configured by the bootstrap code.
 
 ### Why validate configuration at startup?
 
-Invalid configuration should be detected when the application starts rather
-than causing unexpected failures later during request processing.
+Invalid configuration should be detected when the application starts rather than causing unexpected failures later during request processing.
 
-Failing early makes configuration problems easier to identify and prevents
-the application from starting with an invalid runtime configuration.
+Failing early makes configuration problems easier to identify and prevents the application from starting with an invalid runtime configuration.
 
 ### Concepts Learned
 
 **Configuration Module**
 
-NestJS `ConfigModule` provides application configuration through the NestJS
-dependency-injection system.
+NestJS `ConfigModule` provides application configuration through the NestJS dependency-injection system.
 
 **Environment Validation**
 
-Environment variables can be validated against a defined schema before the
-application starts.
+Environment variables can be validated against a defined schema before the application starts.
 
 **Fail Fast**
 
-Configuration errors are detected during startup instead of being allowed
-to propagate into runtime behavior.
+Configuration errors are detected during startup instead of being allowed to propagate into runtime behavior.
 
 ---
 
@@ -1192,16 +1179,13 @@ to propagate into runtime behavior.
 
 ### What we're building
 
-The API must validate incoming request data before it reaches application
-logic.
+The API must validate incoming request data before it reaches application logic.
 
 ### What we implemented
 
 A shared application setup function was created:
 
-```
-apps/api/src/app.setup.ts
-```
+`apps/api/src/app.setup.ts`
 
 The function configures a global NestJS `ValidationPipe` with:
 
@@ -1211,19 +1195,13 @@ The function configures a global NestJS `ValidationPipe` with:
 
 ### Why global validation?
 
-Request validation should be applied consistently across the API rather
-than requiring every controller to configure validation independently.
+Request validation should be applied consistently across the API rather than requiring every controller to configure validation independently.
 
 ### Validation Behavior
 
-The API rejects invalid request bodies.
+The API rejects invalid request bodies with:
 
-For example, a DTO containing an invalid email address or a name shorter
-than the required minimum length produces:
-
-```
-HTTP 400 Bad Request
-```
+`HTTP 400 Bad Request`
 
 The API also rejects unexpected properties that are not defined by the DTO.
 
@@ -1231,13 +1209,11 @@ The API also rejects unexpected properties that are not defined by the DTO.
 
 **DTO**
 
-A Data Transfer Object defines the expected structure of data entering or
-leaving an application boundary.
+A Data Transfer Object defines the expected structure of data entering or leaving an application boundary.
 
 **ValidationPipe**
 
-NestJS provides `ValidationPipe` to validate and transform incoming
-request data.
+NestJS provides `ValidationPipe` to validate and transform incoming request data.
 
 **Whitelist**
 
@@ -1245,8 +1221,7 @@ The whitelist option allows only properties defined by validation metadata.
 
 **Forbid Non-Whitelisted**
 
-This option rejects requests containing properties that are not allowed
-instead of silently removing them.
+This option rejects requests containing properties that are not allowed instead of silently removing them.
 
 ---
 
@@ -1254,16 +1229,13 @@ instead of silently removing them.
 
 ### What we're building
 
-Each API request needs a stable identifier that can later be used to
-correlate requests, logs, and errors.
+Each API request needs a stable identifier that can later be used to correlate requests, logs, and errors.
 
 ### What we implemented
 
 Created:
 
-```
-apps/api/src/common/middleware/request-id.middleware.ts
-```
+`apps/api/src/common/middleware/request-id.middleware.ts`
 
 The middleware:
 
@@ -1273,45 +1245,21 @@ The middleware:
 4. Stores the ID on the request.
 5. Returns the ID through the `X-Request-Id` response header.
 
-### Verification
-
-A request without a request ID produced a generated UUID:
-
-```
-30ba4760-cba3-409e-a811-41225e084018
-```
-
-A request with:
-
-```
-X-Request-Id: fas-test-request-123
-```
-
-returned:
-
-```
-X-Request-Id: fas-test-request-123
-```
-
 ### Why request IDs?
 
-A request ID provides a common identifier that can connect an HTTP request
-with application logs and error responses.
+A request ID provides a common identifier that can connect an HTTP request with application logs and error responses.
 
-This becomes particularly useful when diagnosing failures in a distributed
-system containing the API, worker, database, and external services.
+This becomes particularly useful when diagnosing failures in a distributed system containing the API, worker, database, and external services.
 
 ### Concepts Learned
 
 **Request Correlation**
 
-A request identifier allows events belonging to the same request to be
-connected during troubleshooting.
+A request identifier allows events belonging to the same request to be connected during troubleshooting.
 
 **Middleware**
 
-Middleware executes during the HTTP request/response lifecycle and can
-perform cross-cutting operations before the request reaches a controller.
+Middleware executes during the HTTP request/response lifecycle and can perform cross-cutting operations before the request reaches a controller.
 
 ---
 
@@ -1319,19 +1267,15 @@ perform cross-cutting operations before the request reaches a controller.
 
 ### What we're building
 
-The API needs a consistent error response format and should avoid exposing
-unnecessary internal implementation details.
+The API needs a consistent error response format and should avoid exposing unnecessary internal implementation details.
 
 ### What we implemented
 
 Created:
 
-```
-apps/api/src/common/filters/all-exceptions.filter.ts
-```
+`apps/api/src/common/filters/all-exceptions.filter.ts`
 
-The global exception filter handles both NestJS HTTP exceptions and
-unexpected exceptions.
+The global exception filter handles both NestJS HTTP exceptions and unexpected exceptions.
 
 HTTP exceptions return a structured response containing:
 
@@ -1342,133 +1286,30 @@ HTTP exceptions return a structured response containing:
 
 Unexpected exceptions return:
 
-```
-statusCode: 500
-message: "Internal server error"
-```
+`statusCode: 500`
+`message: "Internal server error"`
 
 The request ID is included in both cases.
 
-### Error Response
-
-An unknown route was tested using:
-
-```
-GET /does-not-exist
-```
-
-The API returned:
-
-```
-{
-  "statusCode": 404,
-  "message": "Cannot GET /does-not-exist",
-  "error": "Not Found",
-  "requestId": "e5e6d828-51ae-49c6-ae73-b56a120d18eb"
-}
-```
-
-The response header was also verified using a known request ID:
-
-```
-X-Request-Id: fas-error-test-123
-```
-
-The returned response header contained:
-
-```
-X-Request-Id: fas-error-test-123
-```
-
 ### Why a global exception filter?
 
-Centralizing exception handling provides a consistent API error contract and
-prevents individual controllers from having to implement the same error
-formatting behavior.
+Centralizing exception handling provides a consistent API error contract and prevents individual controllers from having to implement the same error formatting behavior.
 
-The filter also prevents unexpected server exceptions from being returned
-with potentially sensitive implementation details.
+The filter also prevents unexpected server exceptions from being returned with potentially sensitive implementation details.
 
 ### Concepts Learned
 
 **Exception Filter**
 
-A NestJS exception filter intercepts exceptions and controls how they are
-converted into HTTP responses.
+A NestJS exception filter intercepts exceptions and controls how they are converted into HTTP responses.
 
 **Error Contract**
 
-An API error contract defines the structure clients can consistently expect
-when requests fail.
+An API error contract defines the structure clients can consistently expect when requests fail.
 
 **Internal Error Isolation**
 
-Unexpected server errors should expose a generic message to clients while
-allowing detailed diagnostic information to be handled by server-side
-logging.
-
----
-
-## Backend Foundation Checkpoint
-
-Completed:
-
-- Centralized application configuration
-- Environment validation with Joi
-- Global request validation
-- Whitelist enforcement
-- Request ID middleware
-- Request ID propagation through responses
-- Global exception handling
-- Consistent HTTP error responses
-- Generic handling for unexpected server errors
-
-### Verification
-
-The API backend foundation was verified using:
-
-```
-pnpm --filter api build
-pnpm --filter api test
-pnpm --filter api test:e2e
-pnpm --filter api lint
-```
-
-Results:
-
-- Build: passed
-- Unit tests: 1 passed
-- E2E tests: 1 passed
-- Lint: 0 warnings and 0 errors
-
-Additional manual verification confirmed:
-
-- Invalid `PORT` configuration prevents application startup.
-- Generated request IDs are returned through `X-Request-Id`.
-- Supplied request IDs are preserved.
-- Unknown routes return the standardized error response.
-- Error response request IDs are preserved.
-
-### Git Milestone
-
-The backend foundation checkpoint was committed and pushed as:
-
-```
-2b07f45 feat: establish backend validation and error handling
-```
-
-The working tree was verified clean after pushing.
-
-### Result
-
-The FAS API now has a validated configuration foundation, global request
-validation, request correlation, and centralized error handling.
-
-The remaining Phase 3 work includes:
-
-- Structured logging
-- OpenAPI API documentation
-- Final Phase 3 verification
+Unexpected server errors should expose a generic message to clients while allowing detailed diagnostic information to be handled by server-side logging.
 
 ---
 
@@ -1476,29 +1317,23 @@ The remaining Phase 3 work includes:
 
 ### What we're building
 
-The API needs structured application logs that provide useful information
-for startup and HTTP request processing.
+The API needs structured application logs that provide useful information for startup and HTTP request processing.
 
-Because request IDs were already established, HTTP logs can correlate an
-incoming request with the corresponding application event.
+Because request IDs were already established, HTTP logs can correlate an incoming request with the corresponding application event.
 
 ### What we implemented
 
-The API now uses NestJS's built-in `Logger` rather than introducing an
-additional logging dependency.
+The API uses NestJS's built-in `Logger` rather than introducing an additional logging dependency.
 
 The bootstrap process emits a structured startup event containing:
 
 - event name
 - configured port
+- OpenAPI path
 
 HTTP request logging was added through:
 
-```
-apps/api/src/common/middleware/request-logging.middleware.ts
-```
-
-The middleware records a structured event after the HTTP response finishes.
+`apps/api/src/common/middleware/request-logging.middleware.ts`
 
 Each HTTP request log contains:
 
@@ -1511,11 +1346,9 @@ Each HTTP request log contains:
 
 ### Why log after the response finishes?
 
-The response `finish` event allows the logger to record the final HTTP
-status code and the total request duration.
+The response `finish` event allows the logger to record the final HTTP status code and total request duration.
 
-This makes the log useful for both request tracing and basic performance
-diagnostics.
+This makes the log useful for both request tracing and basic performance diagnostics.
 
 ### Request Correlation
 
@@ -1523,71 +1356,21 @@ The request logging middleware runs after the request ID middleware.
 
 The resulting flow is:
 
-```
-Request
-    ↓
-Request ID middleware
-    ↓
-HTTP logging middleware
-    ↓
-Validation
-    ↓
-Controller
-    ↓
-Response finishes
-    ↓
-Structured HTTP log
-```
-
-A request using:
-
-```
-X-Request-Id: fas-log-test-123
-```
-
-produced a log event containing:
-
-```
-{
-  "event": "http_request",
-  "requestId": "fas-log-test-123",
-  "method": "GET",
-  "path": "/",
-  "statusCode": 200,
-  "durationMs": 6.45
-}
-```
-
-### Bootstrap Logging
-
-Application startup also produces a structured event:
-
-```
-{
-  "event": "api_started",
-  "port": 3000
-}
-```
+Request → Request ID middleware → HTTP logging middleware → Validation → Controller → Response finishes → Structured HTTP log
 
 ### Why use the built-in logger?
 
-The current Phase 3 requirement is to establish structured application
-logging without introducing unnecessary infrastructure.
+The current backend foundation only requires structured application logging.
 
-NestJS's built-in `Logger` is sufficient for this foundation. A dedicated
-logging platform or external logging dependency is not required at this
-stage.
+NestJS's built-in `Logger` is sufficient without introducing unnecessary logging infrastructure.
 
-More advanced monitoring, alerting, and production observability belong to
-the later deployment and observability work defined by the implementation
-plan.
+More advanced monitoring and production observability belong to later hardening and deployment work.
 
 ### Concepts Learned
 
 **Structured Logging**
 
-Logs can be emitted as structured data so that important fields such as
-event type, request ID, status, and duration can be processed consistently.
+Logs can be emitted as structured data so that important fields such as event type, request ID, status, and duration can be processed consistently.
 
 **Request Correlation**
 
@@ -1595,64 +1378,7 @@ A request ID connects an HTTP request with its corresponding log events.
 
 **Response Lifecycle**
 
-Listening for the response `finish` event allows request logging to capture
-the final response status and elapsed processing time.
-
----
-
-## Structured Logging Checkpoint
-
-Completed:
-
-- Structured application startup logging
-- Structured HTTP request logging
-- Request ID correlation in HTTP logs
-- HTTP method logging
-- Request path logging
-- HTTP status logging
-- Request duration logging
-
-### Verification
-
-The logging implementation was verified using:
-
-```
-pnpm --filter api build
-pnpm --filter api test
-pnpm --filter api test:e2e
-pnpm --filter api lint
-```
-
-Results:
-
-- Build: passed
-- Unit tests: 1 passed
-- E2E tests: 1 passed
-- Lint: 0 warnings and 0 errors
-
-Manual verification confirmed that an HTTP request using
-`fas-log-test-123` produced a corresponding structured `http_request`
-log containing the same request ID and a successful HTTP status.
-
-### Git Milestone
-
-The structured logging checkpoint was committed and pushed as:
-
-```
-1f5c429 feat: add structured HTTP request logging
-```
-
-The working tree was verified clean after pushing.
-
-### Result
-
-The FAS API now has a structured logging foundation that can correlate HTTP
-requests with request IDs and record basic request execution information.
-
-The remaining Phase 3 work includes:
-
-- OpenAPI API documentation
-- Final Phase 3 verification
+Listening for the response `finish` event allows request logging to capture the final response status and elapsed time.
 
 ---
 
@@ -1660,55 +1386,63 @@ The remaining Phase 3 work includes:
 
 ### What we're building
 
-The FAS API needs machine-readable API documentation so that developers can understand and interact with the available HTTP endpoints.
+The API needs machine-readable API documentation and a browser-accessible Swagger interface so that the available HTTP API can be inspected during development.
 
 ### What we implemented
 
-OpenAPI documentation was added using NestJS Swagger through `@nestjs/swagger`.
+Added NestJS Swagger support through:
 
-The API now exposes `/docs` for the interactive Swagger UI and `/docs-json` for the generated OpenAPI document.
+`@nestjs/swagger`
 
-The Swagger configuration contains:
+The application creates an OpenAPI document containing:
 
-- Title: `FAS API`
+- API title: `FAS API`
 - Description: `Faculty Appointment Scheduler API`
 - Version: `1.0`
 
-### Why OpenAPI?
+Swagger UI is exposed at:
 
-OpenAPI provides a standard machine-readable description of an HTTP API.
+`/docs`
 
-Swagger UI provides an interactive interface for exploring the generated API documentation.
+The generated OpenAPI document is exposed at:
+
+`/docs-json`
 
 ### Verification
 
 The following endpoints were manually verified:
 
-- `GET /` → HTTP 200
-- `GET /docs` → HTTP 200
-- `GET /docs-json` → HTTP 200
+- `GET /` → `200`
+- `GET /docs` → `200`
+- `GET /docs-json` → `200`
 
-The generated OpenAPI document uses OpenAPI `3.0.0` and contains the existing `GET /` route.
+The generated OpenAPI document uses OpenAPI version `3.0.0` and contains the existing `GET /` route.
+
+### Why OpenAPI?
+
+OpenAPI provides a machine-readable description of the HTTP API.
+
+Swagger UI makes that description easier to inspect during development and provides a foundation for documenting future API endpoints.
 
 ### Concepts Learned
 
 **OpenAPI**
 
-A standard specification for describing HTTP APIs in a machine-readable format.
+OpenAPI describes HTTP APIs in a standardized machine-readable format.
 
 **Swagger UI**
 
-An interactive interface for exploring an OpenAPI document.
+Swagger UI provides a browser interface for exploring an OpenAPI document.
 
-**API Documentation**
+**API Contract**
 
-API documentation makes the available HTTP interface easier for developers and tools to understand.
+API documentation makes the expected HTTP interface explicit for both developers and future API consumers.
 
 ---
 
-## Phase 3 Final Verification
+## Phase 3 — Backend Foundation Complete
 
-Phase 3 backend foundation work is complete.
+The FAS API backend foundation is now complete.
 
 Completed:
 
@@ -1717,24 +1451,25 @@ Completed:
 - Global request validation
 - Whitelist enforcement
 - Request ID middleware
-- Request ID propagation
+- Request ID propagation through responses
 - Global exception handling
-- Structured application logging
+- Consistent HTTP error responses
+- Generic handling for unexpected server errors
+- Structured startup logging
 - Structured HTTP request logging
-- Request correlation
+- Request ID correlation in logs
 - OpenAPI documentation
+- Swagger UI
 
-### Verification
+### Final Verification
 
-The following commands passed:
+The final Phase 3 verification was completed using:
 
 `pnpm --filter api build`
-
 `pnpm --filter api test`
-
 `pnpm --filter api test:e2e`
-
 `pnpm --filter api lint`
+`git diff --check`
 
 Results:
 
@@ -1742,29 +1477,46 @@ Results:
 - Unit tests: 1 passed
 - E2E tests: 1 passed
 - Lint: 0 warnings and 0 errors
-- `git diff --check`: clean
+- Diff check: clean
+- Working tree: clean
 
-Manual verification also confirmed:
+Additional manual verification confirmed:
 
-- The API starts successfully.
-- Structured startup logging is emitted.
-- HTTP request logs contain request IDs, methods, paths, status codes, and durations.
-- Request IDs are returned through the `X-Request-Id` response header.
+- Invalid `PORT` configuration prevents application startup.
+- Generated request IDs are returned through `X-Request-Id`.
 - Supplied request IDs are preserved.
-- Unknown routes return the standardized error response.
+- Error responses contain request IDs.
+- Structured HTTP logs contain request IDs, method, path, status, and duration.
 - `/docs` returns HTTP 200.
 - `/docs-json` returns HTTP 200.
-- The generated OpenAPI document contains the FAS API metadata.
+- The existing `/` endpoint continues to return HTTP 200.
+
+### Git History
+
+The main Phase 3 implementation milestones were committed as:
+
+- `2b07f45 feat: establish backend validation and error handling`
+- `1f5c429 feat: add structured HTTP request logging`
+- `585f2af feat: add OpenAPI documentation`
+
+Documentation milestones were committed separately:
+
+- `aff0b31 docs: record backend foundation checkpoint`
+- `f82c36f docs: record structured logging`
+
+The OpenAPI documentation update was committed as:
+
+- `4cd18ae docs: record OpenAPI documentation`
 
 ### Result
 
-The FAS API now has its initial backend infrastructure foundation, including configuration, validation, request correlation, error handling, structured logging, and OpenAPI documentation.
+Phase 3 established the backend infrastructure required for the FAS application layer.
 
-**Phase 3 is complete.**
+The API now has validated configuration, request validation, request correlation, centralized error handling, structured logging, and OpenAPI documentation.
 
 The next implementation phase is:
 
-- Authentication & Users
+**Phase 4 — Authentication & Users**
 
 ---
 
